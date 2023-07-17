@@ -1,20 +1,52 @@
 import React, { useState } from "react";
 import Calendar from "react-calendar";
-import "react-calendar/dist/Calendar.css"; // Stile importieren, um den Kalender zu formatieren
+import "react-calendar/dist/Calendar.css";
+import Modal from "react-modal";
 
-function CalendarComponent() {
+function CalendarComp() {
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedTime, setSelectedTime] = useState(null); // State for the selected time
 
+  // Function to handle date change when a date is selected in the calendar
   const handleDateChange = (date) => {
     setSelectedDate(date);
+    setIsModalOpen(true); // Open the modal when a date is selected
+  };
+
+  // Function to close the modal
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
+
+  // Function to set the selected time and close the modal
+  const handleTimeSelection = (time) => {
+    setSelectedTime(time);
+    closeModal();
   };
 
   return (
     <div>
       <h1>My Barber</h1>
       <Calendar onChange={handleDateChange} value={selectedDate} />
+
+      <Modal
+        isOpen={isModalOpen}
+        onRequestClose={closeModal}
+        contentLabel="Select Time"
+      >
+        <h2>Select Time</h2>
+        {/* Here you can implement a component or logic for time selection */}
+        {/* For example, a dropdown list for time options */}
+        <select onChange={(e) => handleTimeSelection(e.target.value)}>
+          <option value="08:00">08:00</option>
+          <option value="09:00">09:00</option>
+          <option value="10:00">10:00</option>
+          {/* Add more time options as needed */}
+        </select>
+      </Modal>
     </div>
   );
 }
 
-export default CalendarComponent;
+export default CalendarComp;
