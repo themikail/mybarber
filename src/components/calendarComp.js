@@ -7,11 +7,14 @@ function CalendarComp() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTime, setSelectedTime] = useState(null); // State for the selected time
+  const [bookingStatus, setBookingStatus] = useState(null); // State for booking status message
 
   // Function to handle date change when a date is selected in the calendar
   const handleDateChange = (date) => {
     setSelectedDate(date);
     setIsModalOpen(true); // Open the modal when a date is selected
+    setSelectedTime(null); // Reset selected time when the modal is opened
+    setBookingStatus(null); // Reset booking status when the modal is opened
   };
 
   // Function to close the modal
@@ -19,15 +22,21 @@ function CalendarComp() {
     setIsModalOpen(false);
   };
 
-  // Function to set the selected time and close the modal
+  // Function to set the selected time
   const handleTimeSelection = (time) => {
     setSelectedTime(time);
-    closeModal();
+  };
+
+  // Function to confirm the booking and show the success message
+  const confirmBooking = () => {
+    if (selectedTime) {
+      setBookingStatus("Successfully booked!"); // Set the success message
+    }
   };
 
   return (
     <div>
-      <h1>My Barber</h1>
+      <h1>My Calendar</h1>
       <Calendar onChange={handleDateChange} value={selectedDate} />
 
       <Modal
@@ -44,6 +53,8 @@ function CalendarComp() {
           <option value="10:00">10:00</option>
           {/* Add more time options as needed */}
         </select>
+        <button onClick={confirmBooking}>Confirm</button>
+        {bookingStatus && <p>{bookingStatus}</p>}
       </Modal>
     </div>
   );
