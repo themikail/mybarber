@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { db } from "../server/firebase";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import Modal from "react-modal";
