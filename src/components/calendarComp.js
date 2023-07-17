@@ -45,14 +45,27 @@ function CalendarComp() {
   };
 
   // Function to confirm the booking and show the success message
+  // Function to confirm the booking and save data to Firebase
   const confirmBooking = () => {
     if (selectedTime && selectedService) {
-      setBookingStatus("Successfully booked!"); // Set the success message
+      // Create a new booking object with the selected data
+      const newBooking = {
+        time: selectedTime,
+        service: selectedService,
+        note: note,
+      };
 
-      // Log the booking details to the console
-      console.log("Selected Time:", selectedTime);
-      console.log("Selected Service:", selectedService);
-      console.log("Note:", note);
+      // Save the booking data to Firebase Realtime Database
+      db.ref("bookings")
+        .push(newBooking)
+        .then(() => {
+          setBookingStatus("Successfully booked!"); // Set the success message
+          console.log("Booking data saved:", newBooking);
+        })
+        .catch((error) => {
+          setBookingStatus("Failed to book. Please try again later.");
+          console.error("Error saving booking data:", error);
+        });
     }
   };
 
