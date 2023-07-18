@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { db } from "../server/firebase";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import Modal from "react-modal";
@@ -12,6 +13,7 @@ function CalendarComp() {
   const [selectedService, setSelectedService] = useState(""); // State for the selected service
   const [note, setNote] = useState(""); // State for the user's note
   const [bookingStatus, setBookingStatus] = useState(null); // State for booking status message
+  const [appointments, setAppointments] = useState([]);
 
   // Function to handle date change when a date is selected in the calendar
   const handleDateChange = (date) => {
@@ -43,16 +45,47 @@ function CalendarComp() {
     setNote(e.target.value);
   };
 
-  // Function to confirm the booking and show the success message
+  // Function to confirm the booking and save data to Firebase
   const confirmBooking = () => {
     if (selectedTime && selectedService) {
-      setBookingStatus("Successfully booked!"); // Set the success message
+      const newBooking = {
+        time: selectedTime,
+        service: selectedService,
+        note: note,
+      };
 
-      // Log the booking details to the console
-      console.log("Selected Time:", selectedTime);
-      console.log("Selected Service:", selectedService);
-      console.log("Note:", note);
+      // Save the booking data to Firebase Realtime Database
+      const newBookingRef = db.ref("bookings").push();
+      newBookingRef
+        .set(newBooking)
+        .then(() => {
+          setBookingStatus("Successfully booked!");
+          setAppointments([
+            ...appointments,
+            { ...newBooking, key: newBookingRef.key },
+          ]);
+          console.log("Booking data saved:", newBooking);
+        })
+        .catch((error) => {
+          setBookingStatus("Failed to book. Please try again later.");
+          console.error("Error saving booking data:", error);
+        });
     }
+  };
+
+  // Delete booking
+  const handleDeleteAppointment = (key) => {
+    db.ref(`bookings/${key}`)
+      .remove()
+      .then(() => {
+        setAppointments(
+          appointments.filter((appointment) => appointment.key !== key)
+        );
+        console.log("Appointment deleted:", key);
+      })
+      .catch((error) => {
+        console.error("Error deleting appointment:", error);
+      });
   };
 
   return (
@@ -90,6 +123,19 @@ function CalendarComp() {
         <button onClick={confirmBooking}>Confirm</button>
         {bookingStatus && <p>{bookingStatus}</p>}
       </Modal>
+      {/* Display the booked appointments */}
+      <h2>Booked Appointments</h2>
+      <ul>
+        {appointments.map((appointment) => (
+          <li key={appointment.key}>
+            Time: {appointment.time}, Service: {appointment.service}, Note:{" "}
+            {appointment.note}
+            <button onClick={() => handleDeleteAppointment(appointment.key)}>
+              Delete
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
