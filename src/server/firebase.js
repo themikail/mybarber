@@ -1,5 +1,6 @@
 import firebase from "firebase/compat/app";
-import "firebase/compat/database"; // Import the Realtime Database module
+import "firebase/compat/database";
+import "firebase/compat/auth";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAkrwmGGFBG-I6LvKKK5T3Zzpx7vcqw4LI",
@@ -18,3 +19,6 @@ firebase.initializeApp(firebaseConfig);
 
 // Export the Realtime Database instance
 export const db = firebase.database();
+
+// Export the authentication instance
+export const auth = firebase.auth();
