@@ -1,51 +1,48 @@
 import React, { useState } from "react";
-import { db } from "../server/firebase";
+import { db } from "../server/firebase"; // Stelle sicher, dass der richtige Pfad zu Firebase verwendet wird
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import Modal from "react-modal";
+import Alert from "react-bootstrap/Alert";
+import Button from "react-bootstrap/Button";
 
-Modal.setAppElement("#root"); // Replace "#root" with the id of your root element
+Modal.setAppElement("#root"); // Ersetze "#root" durch die ID deines Wurzelelements
 
 function CalendarComp() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedTime, setSelectedTime] = useState(null); // State for the selected time
-  const [selectedService, setSelectedService] = useState(""); // State for the selected service
-  const [note, setNote] = useState(""); // State for the user's note
-  const [bookingStatus, setBookingStatus] = useState(null); // State for booking status message
+  const [selectedTime, setSelectedTime] = useState(null);
+  const [selectedService, setSelectedService] = useState("");
+  const [note, setNote] = useState("");
+  const [bookingStatus, setBookingStatus] = useState(null);
   const [appointments, setAppointments] = useState([]);
+  const [show, setShow] = useState(true);
 
-  // Function to handle date change when a date is selected in the calendar
   const handleDateChange = (date) => {
     setSelectedDate(date);
-    setIsModalOpen(true); // Open the modal when a date is selected
-    setSelectedTime(null); // Reset selected time when the modal is opened
-    setSelectedService(""); // Reset selected service when the modal is opened
-    setNote(""); // Reset note when the modal is opened
-    setBookingStatus(null); // Reset booking status when the modal is opened
+    setIsModalOpen(true);
+    setSelectedTime(null);
+    setSelectedService("");
+    setNote("");
+    setBookingStatus(null);
   };
 
-  // Function to close the modal
   const closeModal = () => {
     setIsModalOpen(false);
   };
 
-  // Function to set the selected time
   const handleTimeSelection = (time) => {
     setSelectedTime(time);
   };
 
-  // Function to handle service selection from the dropdown
   const handleServiceSelection = (e) => {
     setSelectedService(e.target.value);
   };
 
-  // Function to handle note input
   const handleNoteInput = (e) => {
     setNote(e.target.value);
   };
 
-  // Function to confirm the booking and save data to Firebase
   const confirmBooking = () => {
     if (selectedTime && selectedService) {
       const newBooking = {
@@ -54,26 +51,26 @@ function CalendarComp() {
         note: note,
       };
 
-      // Save the booking data to Firebase Realtime Database
       const newBookingRef = db.ref("bookings").push();
       newBookingRef
         .set(newBooking)
         .then(() => {
-          setBookingStatus("Successfully booked!");
+          setBookingStatus("Erfolgreich gebucht!");
           setAppointments([
             ...appointments,
             { ...newBooking, key: newBookingRef.key },
           ]);
-          console.log("Booking data saved:", newBooking);
+          console.log("Buchungsdaten gespeichert:", newBooking);
         })
         .catch((error) => {
-          setBookingStatus("Failed to book. Please try again later.");
-          console.error("Error saving booking data:", error);
+          setBookingStatus(
+            "Fehler beim Buchen. Bitte versuchen Sie es später erneut."
+          );
+          console.error("Fehler beim Speichern der Buchungsdaten:", error);
         });
     }
   };
 
-  // Delete booking
   const handleDeleteAppointment = (key) => {
     db.ref(`bookings/${key}`)
       .remove()
@@ -81,10 +78,10 @@ function CalendarComp() {
         setAppointments(
           appointments.filter((appointment) => appointment.key !== key)
         );
-        console.log("Appointment deleted:", key);
+        console.log("Termin gelöscht:", key);
       })
       .catch((error) => {
-        console.error("Error deleting appointment:", error);
+        console.error("Fehler beim Löschen des Termins:", error);
       });
   };
 
@@ -98,41 +95,54 @@ function CalendarComp() {
         onRequestClose={closeModal}
         contentLabel="Select Time"
       >
-        <h2>Select Time</h2>
-        {/* Here you can implement a component or logic for time selection */}
-        {/* For example, a dropdown list for time options */}
+        <h2>Zeit auswählen</h2>
         <select onChange={(e) => handleTimeSelection(e.target.value)}>
           <option value="08:00">08:00</option>
           <option value="09:00">09:00</option>
           <option value="10:00">10:00</option>
-          {/* Add more time options as needed */}
+          {/* Füge weitere Zeitoptionen hinzu, wie benötigt */}
         </select>
 
-        <h2>Select Service</h2>
+        <h2>Service auswählen</h2>
         <select onChange={handleServiceSelection}>
-          <option value="">Select a service</option>
-          <option value="Haircut">Haircut</option>
-          <option value="Shave">Shave</option>
-          <option value="Beard Trim">Beard Trim</option>
-          {/* Add more service options as needed */}
+          <option value="">Wählen Sie einen Service aus</option>
+          <option value="Haarschnitt">Haarschnitt</option>
+          <option value="Rasur">Rasur</option>
+          <option value="Barttrimmung">Barttrimmung</option>
+          {/* Füge weitere Serviceoptionen hinzu, wie benötigt */}
         </select>
 
-        <h2>Add a Note</h2>
+        <h2>Notiz hinzufügen</h2>
         <textarea value={note} onChange={handleNoteInput} />
 
-        <button onClick={confirmBooking}>Confirm</button>
+        <button onClick={confirmBooking}>Bestätigen</button>
         {bookingStatus && <p>{bookingStatus}</p>}
       </Modal>
-      {/* Display the booked appointments */}
-      <h2>Booked Appointments</h2>
+      <h2>Gebuchte Termine</h2>
       <ul>
         {appointments.map((appointment) => (
           <li key={appointment.key}>
-            Time: {appointment.time}, Service: {appointment.service}, Note:{" "}
+            Zeit: {appointment.time}, Service: {appointment.service}, Notiz:{" "}
             {appointment.note}
-            <button onClick={() => handleDeleteAppointment(appointment.key)}>
-              Delete
-            </button>
+            <Alert show={show} variant="success">
+              <Alert.Heading>My Alert</Alert.Heading>
+              <p>sicher</p>
+              <hr />
+              <div className="d-flex justify-content-end">
+                <button
+                  onClick={() => handleDeleteAppointment(appointment.key)}
+                >
+                  Löschen
+                </button>
+                <Button
+                  onClick={() => setShow(false)}
+                  variant="outline-success"
+                >
+                  nein
+                </Button>
+              </div>
+            </Alert>
+            {!show && <Button onClick={() => setShow(true)}>Löschen</Button>}
           </li>
         ))}
       </ul>
