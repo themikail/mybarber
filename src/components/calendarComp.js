@@ -3,12 +3,10 @@ import { db } from "../server/firebase";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import Modal from "react-modal";
-import TimePicker from "../data/TimePicker";
-import ServicePicker from "../data/ServicePicker";
 
 Modal.setAppElement("#root");
 
-function CalendarComp() {
+function CalendarComp({ user }) {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTime, setSelectedTime] = useState(null);
@@ -59,14 +57,18 @@ function CalendarComp() {
   };
 
   const confirmBooking = () => {
-    if (selectedTime && selectedService) {
+    if (selectedTime && selectedService && user) {
       const newBooking = {
         time: selectedTime,
         service: selectedService,
         note: note,
+        userName: user.name,
+        userEmail: user.email,
+        userPhone: user.phone,
       };
 
       const newBookingRef = db.ref("bookings").push();
+      console.log("New Booking Data:", newBooking);
       newBookingRef
         .set(newBooking)
         .then(() => {
@@ -120,18 +122,33 @@ function CalendarComp() {
         onRequestClose={closeModal}
         contentLabel="Select Time"
       >
-        <TimePicker
-          selectedTime={selectedTime}
-          handleTimeSelection={handleTimeSelection}
-          bookedTimes={bookedTimes}
-        />
+        <h2>Select Time</h2>
+        <select
+          onChange={(e) => handleTimeSelection(e.target.value)}
+          disabled={isTimeBooked(selectedTime)}
+        >
+          <option value="08:00" disabled={isTimeBooked("08:00")}>
+            08:00
+          </option>
+          <option value="09:00" disabled={isTimeBooked("09:00")}>
+            09:00
+          </option>
+          <option value="10:00" disabled={isTimeBooked("10:00")}>
+            10:00
+          </option>
+        </select>
 
-        <ServicePicker
-          selectedService={selectedService}
-          handleServiceSelection={handleServiceSelection}
-        />
+        <h2>Select Service</h2>
+        <select onChange={handleServiceSelection}>
+          <option value="">Select a service</option>
+          <option value="Haircut">Haircut</option>
+          <option value="Shave">Shave</option>
+          <option value="Beard Trim">Beard Trim</option>
+        </select>
+
         <h2>Add a Note</h2>
         <textarea value={note} onChange={handleNoteInput} />
+
         <button onClick={confirmBooking} disabled={isTimeBooked(selectedTime)}>
           Confirm
         </button>
