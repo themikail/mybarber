@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { db, auth } from "../server/firebase"; // Annahme, dass auth Ihre Firebase-Authentifizierung ist
+import { db, auth } from "../server/firebase";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import Modal from "react-modal";
