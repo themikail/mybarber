@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { db } from "../server/firebase";
+import { db, auth } from "../server/firebase"; // Annahme, dass auth Ihre Firebase-Authentifizierung ist
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import Modal from "react-modal";
 
 Modal.setAppElement("#root");
 
-function CalendarComp({ user }) {
+function CalendarComp() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTime, setSelectedTime] = useState(null);
@@ -15,23 +15,42 @@ function CalendarComp({ user }) {
   const [bookingStatus, setBookingStatus] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const [bookedTimes, setBookedTimes] = useState([]);
+  const [user, setUser] = useState(null);
 
-  // Load booked times from Firebase when the component mounts
+  // Abonnieren Sie den aktuellen Benutzer
   useEffect(() => {
-    const bookedTimesRef = db.ref("bookedTimes");
-    bookedTimesRef.on("value", (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        setBookedTimes(data);
+    const unsubscribe = auth.onAuthStateChanged((authUser) => {
+      if (authUser) {
+        // Wenn ein Benutzer angemeldet ist, setzen Sie den Benutzerzustand
+        setUser(authUser);
+      } else {
+        // Wenn kein Benutzer angemeldet ist, setzen Sie den Benutzerzustand auf null
+        setUser(null);
       }
     });
+
+    // Unsubscribe von Auth-Änderungen, wenn die Komponente unmontiert wird
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
+  // Laden Sie gebuchte Zeiten von Firestore, wenn die Komponente montiert wird
   useEffect(() => {
-    // If the selected date changes, reset the selected time.
-    setSelectedTime(null);
-  }, [selectedDate]);
+    if (user) {
+      // Hier gehen wir davon aus, dass jede Benutzer-E-Mail-Adresse eindeutig ist
+      const bookedTimesRef = db
+        .collection("bookedTimes")
+        .where("userEmail", "==", user.email);
 
+      bookedTimesRef.onSnapshot((snapshot) => {
+        const data = snapshot.docs.map((doc) => doc.data());
+        setBookedTimes(data);
+      });
+    }
+  }, [user]);
+
+  // Der Rest des Codes bleibt weitgehend unverändert
   const handleDateChange = (date) => {
     setSelectedDate(date);
     setIsModalOpen(true);
@@ -62,12 +81,10 @@ function CalendarComp({ user }) {
         time: selectedTime,
         service: selectedService,
         note: note,
-        userName: user.name,
-        userEmail: user.email,
-        userPhone: user.phone,
+        userEmail: user.email, // Fügen Sie die Benutzer-E-Mail hinzu
       };
 
-      const newBookingRef = db.ref("bookings").push();
+      const newBookingRef = db.collection("bookings").doc();
       console.log("New Booking Data:", newBooking);
       newBookingRef
         .set(newBooking)
@@ -75,12 +92,15 @@ function CalendarComp({ user }) {
           setBookingStatus("Successfully booked!");
           setAppointments([
             ...appointments,
-            { ...newBooking, key: newBookingRef.key },
+            { ...newBooking, key: newBookingRef.id },
           ]);
 
           // Add the booked time to the list of booked times
           setBookedTimes([...bookedTimes, selectedTime]);
-          db.ref("bookedTimes").set(bookedTimes);
+          db.collection("bookedTimes").add({
+            userEmail: user.email,
+            time: selectedTime,
+          });
         })
         .catch((error) => {
           setBookingStatus("Failed to book. Please try again later.");
@@ -90,8 +110,9 @@ function CalendarComp({ user }) {
   };
 
   const handleDeleteAppointment = (key, time) => {
-    db.ref(`bookings/${key}`)
-      .remove()
+    db.collection("bookings")
+      .doc(key)
+      .delete()
       .then(() => {
         setAppointments(
           appointments.filter((appointment) => appointment.key !== key)
@@ -99,7 +120,15 @@ function CalendarComp({ user }) {
 
         // Remove the booked time from the list of booked times
         setBookedTimes(bookedTimes.filter((t) => t !== time));
-        db.ref("bookedTimes").set(bookedTimes.filter((t) => t !== time));
+        db.collection("bookedTimes")
+          .where("userEmail", "==", user.email)
+          .where("time", "==", time)
+          .get()
+          .then((querySnapshot) => {
+            querySnapshot.forEach((doc) => {
+              doc.ref.delete();
+            });
+          });
         console.log("Appointment deleted:", key);
       })
       .catch((error) => {
@@ -107,9 +136,8 @@ function CalendarComp({ user }) {
       });
   };
 
-  // Determine if a time is already booked
   const isTimeBooked = (time) => {
-    return bookedTimes.includes(time);
+    return bookedTimes.some((bt) => bt.time === time);
   };
 
   return (

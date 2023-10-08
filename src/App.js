@@ -6,7 +6,7 @@ import {
   Navigate,
 } from "react-router-dom";
 import "./App.css";
-import CalendarComponent from "./components/calendarComp";
+import CalendarComp from "./components/calendarComp";
 import Login from "./components/login/Login";
 import SignUp from "./components/singup/SignUp";
 
@@ -29,10 +29,7 @@ function App() {
           <Route path="/login" element={<Login setUser={setUser} />} />
           <Route path="/signup" element={<SignUp setUser={setUser} />} />{" "}
           {/* Übergeben Sie setUser an SignUp */}
-          <Route
-            path="/"
-            element={<PrivateRoute element={CalendarComponent} />}
-          />
+          <Route path="/" element={<PrivateRoute element={CalendarComp} />} />
         </Routes>
       </div>
     </Router>
