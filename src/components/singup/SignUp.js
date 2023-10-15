@@ -29,7 +29,7 @@ function SignUp({ setUser }) {
         setUser({ email, name, phoneNumber });
 
         // Redirect to CalendarComp
-        navigate("/calendar"); // Hier erfolgt die Weiterleitung
+        navigate("/"); // Hier erfolgt die Weiterleitung
       })
       .catch((error) => {
         // Handle registration errors

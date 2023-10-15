@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { db, auth } from "../server/firebase";
+import { Navigate } from "react-router-dom";
+import { db, firestore, auth } from "../server/firebase";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import Modal from "react-modal";
@@ -15,37 +16,33 @@ function CalendarComp() {
   const [bookingStatus, setBookingStatus] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const [bookedTimes, setBookedTimes] = useState([]);
+  const [userData, setUserData] = useState(null);
   const [user, setUser] = useState(null);
 
-  // Abonnieren Sie den aktuellen Benutzer
+  // Load booked times from Firebase when the component mounts
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((authUser) => {
-      if (authUser) {
-        // Wenn ein Benutzer angemeldet ist, setzen Sie den Benutzerzustand
-        setUser(authUser);
-      } else {
-        // Wenn kein Benutzer angemeldet ist, setzen Sie den Benutzerzustand auf null
-        setUser(null);
+    const bookedTimesRef = db.ref("bookedTimes");
+    bookedTimesRef.on("value", (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        setBookedTimes(data);
       }
     });
-
-    // Unsubscribe von Auth-Änderungen, wenn die Komponente unmontiert wird
-    return () => {
-      unsubscribe();
-    };
   }, []);
 
-  // Laden Sie gebuchte Zeiten von Firestore, wenn die Komponente montiert wird
+  // Check if the user is defined before accessing it
   useEffect(() => {
     if (user) {
-      // Hier gehen wir davon aus, dass jede Benutzer-E-Mail-Adresse eindeutig ist
-      const bookedTimesRef = db
-        .collection("bookedTimes")
-        .where("userEmail", "==", user.email);
+      // Fetch the user data
+      const userRef = firestore.collection("users").doc(user.uid);
 
-      bookedTimesRef.onSnapshot((snapshot) => {
-        const data = snapshot.docs.map((doc) => doc.data());
-        setBookedTimes(data);
+      userRef.get().then((doc) => {
+        if (doc.exists) {
+          const userData = doc.data();
+          setUserData(userData);
+        } else {
+          console.log("Keine Benutzerdaten gefunden");
+        }
       });
     }
   }, [user]);
@@ -75,38 +72,61 @@ function CalendarComp() {
     setNote(e.target.value);
   };
 
-  const confirmBooking = () => {
-    if (selectedTime && selectedService && user) {
-      const newBooking = {
-        time: selectedTime,
-        service: selectedService,
-        note: note,
-        userEmail: user.email, // Fügen Sie die Benutzer-E-Mail hinzu
-      };
-
-      const newBookingRef = db.collection("bookings").doc();
-      console.log("New Booking Data:", newBooking);
-      newBookingRef
-        .set(newBooking)
-        .then(() => {
-          setBookingStatus("Successfully booked!");
-          setAppointments([
-            ...appointments,
-            { ...newBooking, key: newBookingRef.id },
-          ]);
-
-          // Add the booked time to the list of booked times
-          setBookedTimes([...bookedTimes, selectedTime]);
-          db.collection("bookedTimes").add({
-            userEmail: user.email,
-            time: selectedTime,
-          });
-        })
-        .catch((error) => {
-          setBookingStatus("Failed to book. Please try again later.");
-          console.error("Error saving booking data:", error);
-        });
+  const checkLogin = () => {
+    // Check if the user is logged in
+    if (!user) {
+      return false;
     }
+
+    // Get the user data from Firebase
+    const userDataRef = auth().currentUser;
+    return userDataRef !== null;
+  };
+
+  const confirmBooking = () => {
+    // Check if the user is logged in
+    const isLoggedIn = checkLogin();
+    if (!isLoggedIn) {
+      // User is not logged in, show error message
+      setBookingStatus("Please log in to book an appointment.");
+      return;
+    }
+
+    // Get the user email
+    const userEmail = user.email;
+
+    // Create a new booking object
+    const newBooking = {
+      time: selectedTime,
+      service: selectedService,
+      note: note,
+      userEmail: userEmail, // Add the user email
+    };
+
+    // Save the booking object to Firebase
+    const newBookingRef = db.collection("bookings").doc();
+    newBookingRef
+      .set(newBooking)
+      .then(() => {
+        // Booking successfully booked
+        setBookingStatus("Successfully booked!");
+        setAppointments([
+          ...appointments,
+          { ...newBooking, key: newBookingRef.id },
+        ]);
+
+        // Add the booked time to the list of booked times
+        setBookedTimes([...bookedTimes, selectedTime]);
+        db.collection("bookedTimes").add({
+          userEmail: userEmail,
+          time: selectedTime,
+        });
+      })
+      .catch((error) => {
+        // Booking failed
+        setBookingStatus("Booking failed. Please try again.");
+        console.error("Error booking appointment:", error);
+      });
   };
 
   const handleDeleteAppointment = (key, time) => {

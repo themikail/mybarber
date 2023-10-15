@@ -15,11 +15,11 @@ function App() {
 
   const PrivateRoute = ({ element: Element }) => {
     if (!user) {
-      // Wenn der Benutzer nicht angemeldet ist, navigiere zur Login-Seite
+      // If the user is not logged in, navigate to the Login page
       return <Navigate to="/login" />;
     }
 
-    return <Element user={user} />; // user als Prop an das gerenderte Element übergeben
+    return <Element user={user} />; // Pass 'user' as a prop to the rendered element
   };
 
   return (
@@ -28,7 +28,7 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login setUser={setUser} />} />
           <Route path="/signup" element={<SignUp setUser={setUser} />} />{" "}
-          {/* Übergeben Sie setUser an SignUp */}
+          {/* Pass 'setUser' to SignUp */}
           <Route path="/" element={<PrivateRoute element={CalendarComp} />} />
         </Routes>
       </div>
